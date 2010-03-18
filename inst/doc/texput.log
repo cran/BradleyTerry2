@@ -1,0 +1,21 @@
+This is pdfTeX, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=latex 2008.2.13)  18 MAR 2010 11:49
+entering extended mode
+**\nonstopmode\input{BradleyTerry.Rnw.tex}^^M
+
+! Emergency stop.
+<read *> 
+         
+<*> \nonstopmode\input{BradleyTerry.Rnw.tex}
+                                            ^^M
+*** (cannot \read from terminal in nonstop modes)
+
+ 
+Here is how much of TeX's memory you used:
+ 3 strings out of 94087
+ 123 string characters out of 1167529
+ 48781 words of memory out of 3500000
+ 3387 multiletter control sequences out of 10000+50000
+ 3640 words of font info for 14 fonts, out of 1200000 for 2000
+ 645 hyphenation exceptions out of 8191
+ 4i,0n,3p,1b,8s stack positions out of 5000i,500n,6000p,200000b,5000s
+No pages of output.

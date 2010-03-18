@@ -1,6 +1,6 @@
 Package: BradleyTerry2
-Version: 0.9-1
-Date: 2010-02-23
+Version: 0.9-2
+Date: 2010-03-18
 Title: Bradley-Terry models
 Author: Heather Turner and David Firth
 Maintainer: Heather Turner <heather.turner@warwick.ac.uk>
@@ -11,6 +11,6 @@ Depends: R (>= 1.8.0)
 Imports: MASS, nlme, brglm, gtools, lme4
 License: GPL (>= 2)
 ZipData: no
-Packaged: 2010-02-23 15:45:22 UTC; stsdan
+Packaged: 2010-03-18 11:52:48 UTC; stsdan
 Repository: CRAN
-Date/Publication: 2010-02-23 16:18:17
+Date/Publication: 2010-03-18 14:03:41
