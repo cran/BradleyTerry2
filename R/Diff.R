@@ -20,6 +20,7 @@ Diff <- function(player1, player2, formula = NULL, id = "..", data = NULL,
 
     fixed <- lme4:::nobars(formula)
     offset <- missing <- NULL
+    saturated <- FALSE
     if (!is.null(fixed)) {
         mt <- terms(fixed)
         factors <- attr(mt, "factors")
@@ -93,11 +94,7 @@ Diff <- function(player1, player2, formula = NULL, id = "..", data = NULL,
         ## will need to check for saturation in each set of indexed var
         ## - however as only allowing (1|..) just consider player id for now
 
-        if (saturated <- qr(na.omit(X))$rank == qr(na.omit(cbind(D, X)))$rank &&
-            !idterm) {
-            warning("Player ability saturated - equivalent to ",
-                    "fitting separate abilities.")
-        }
+        saturated <- qr(na.omit(X))$rank == qr(na.omit(cbind(D, X)))$rank && !idterm
         X <- X[, -1, drop = FALSE]
         attr(X, "assign") <- attr(X1, "assign")[-1]
     }
@@ -120,6 +117,6 @@ Diff <- function(player1, player2, formula = NULL, id = "..", data = NULL,
             random <- D[,!sep[[id]]]
     }
     list(X = X, random = random, offset = offset,
-         term.labels = term.labels, refcat = refcat)
+         term.labels = term.labels, refcat = refcat, saturated = saturated)
 }
 
