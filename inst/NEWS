@@ -1,3 +1,18 @@
+Changes in BradleyTerry 0.9-4
+=============================
+
+New Features
+------------
+
+    o	added ice hockey example presented at useR! 2010
+
+Bug fixes
+---------
+
+    o	predict.BTm now works for models with no random effects and handles
+    	new individuals with missing values in predictors. 
+
+
 Changes in BradleyTerry 0.9-3
 =============================
 
