@@ -49,7 +49,7 @@
 
 \author{Heather Turner and David Firth\\{\it University of Warwick, UK}\\
 \\
-\url{http://go.warwick.ac.uk/heatherturner}}
+\url{http://bradleyterry2.r-forge.r-project.org/}}
 
 \date{For \Rpackage{BradleyTerry2} version \Sexpr{packageDescription("BradleyTerry2")[["Version"]]}, \Sexpr{Sys.Date()}}
 
@@ -92,7 +92,12 @@ representing `ability'.  For a good general introduction see \citet{agre:02}.
 Applications are many, ranging from experimental psychology to the analysis of
 sports tournaments to genetics (for example, the allelic
 transmission/disequilibrium test of \citet{sham:curt:95} is based on a
-Bradley-Terry model in which the `players' are alleles).    The model can
+Bradley-Terry model in which the `players' are alleles).
+In typical
+psychometric applications the `contests' are comparisons, made by
+different human subjects, between pairs of items.
+
+The model can
 alternatively be expressed in the logit-linear form
 \begin{equation}
 \logit[\pr(i\ \mathrm{beats}\ j)]=\lambda_i-\lambda_j,
@@ -102,12 +107,20 @@ contests, the parameters $\{\lambda_i\}$ can be estimated by
 maximum likelihood using standard software for generalized linear models, with a
 suitably specified model matrix.  The primary purpose of the \BT\ package,
 implemented in the \R\ statistical computing environment \citep{ihak:gent:96,
-  R}, is to facilitate the specification and fitting of such models, including
-special cases in which the ability parameters are related to available
-explanatory variables through a linear predictor of the form
-$\lambda_i=\sum_{r=1}^p\beta_rx_{ir} + U_i$.  The logit link can be replaced,
-if required, by a different symmetric link function (probit or cauchit).
+R}, is to facilitate the specification and fitting of such models and some
+extensions.
 
+The \BT\ package supersedes the earlier \Rpackage{BradleyTerry} package
+\citet{firt:05}, providing a more flexible user interface to allow a wider
+range of models to be fitted. In particular, \BT\ allows the inclusion of
+simple random effects so that the ability parameters can be related to available
+explanatory variables through a linear predictor of the form
+$\lambda_i=\sum_{r=1}^p\beta_rx_{ir} + U_i$.  The inclusion of the prediction
+error $U_i$ allows for variability between players with equal covariate values
+and induces correlation between comparisons with a common player. \BT\ also
+allows for general contest-specific effects to be included in the model and
+allows the logit link to be replaced, if required, by a different symmetric link
+function (probit or cauchit).
 
 
 \subsection{Example: analysis of journal citations}
@@ -122,7 +135,7 @@ journals of statistics and are included the \BT\ package as the dataset
 library(BradleyTerry2)
 data(citations)
 @
-\newpage
+
 @
 <<CitationData2>>=
 citations
@@ -154,13 +167,16 @@ The coefficients here are maximum likelihood estimates of $\lambda_2, \lambda_3,
 \lambda_4$, with $\lambda_1$ (the log-ability for \emph{Biometrika}) set to zero
 as an identifying convention.
 
-The \Rfunarg{id} argument here gives a name to be used for the factor that identified the `players' (here the four journals).  The (necessarily one-sided)
-model formula
+The one-sided model formula
 \begin{verbatim}
       ~ journal
 \end{verbatim}
- here specifies that there is a separate
-parameter (or `ability') for each level of that factor.
+specifies the model for player ability, in this case the `citeability' of the
+journal. The \Rfunarg{id} argument specifies that \Rcode{"journal"} is the
+name to be used for the factor that identifies the player --- the values of which
+are given here by \Rcode{journal1} and \Rcode{journal2} for the first and
+second players respectively. Therefore in this case a separate
+citeability parameter is estimated for each journal.
 
 If a different `reference' journal is required, this can be achieved using the
 optional \Rfunarg{refcat} argument: for
@@ -201,7 +217,7 @@ and player $j$ is modelled by
 \end{equation}
 where $U_i \sim N(0, \sigma^2)$ for all $i$. The Bradley-Terry model is then a
 generalized linear mixed model, which the \Rfunction{BTm} function currently
-fits using the penalized quasi-likelihood algorithm of \citet{bres:93}.
+fits by using the penalized quasi-likelihood algorithm of \citet{bres:93}.
 
 As a simple illustration, consider the
 response-surface model studied by \citet{spri:73}:
@@ -265,6 +281,7 @@ have some missing covariate data, and those two lizards therefore have their
 abilities estimated by separate coefficients.
 
 \subsection{Order effect}
+\label{sec:order}
 
 In certain types of application some or all contests have an associated `bias',
 related to the order in which items are presented to a judge or with the
@@ -287,7 +304,8 @@ The dataset records the home wins and losses for each baseball team against each
 of the 6 other teams in the dataset. The \Rfunction{head} function is used to
 show the first 6 records, which are the Milwaukee home games. We see for
 example that Milwaukee played 7 home games against Detroit and won 4 of them.
-The `standard' Bradley-Terry model without a home-advantage parameter is fitted as before:
+The `standard' Bradley-Terry model without a home-advantage parameter will be
+fitted if no formula is specified in the call to \Rfunction{BTm}:
 @
 <<baseballModel>>=
 data(baseball)
@@ -298,14 +316,20 @@ summary(baseballModel1)
 The reference team is Baltimore, estimated to be the weakest of these seven,
 with Milwaukee and Detroit the strongest.
 
-To estimate the home-advantage effect, some re-organisation of the data is
-needed.  The \Rcode{at.home} variable is needed for both the home team and
+To estimate the home-advantage effect, the \Robject{home.team} and
+\Robject{away.team} factors need to be replaced by data frames specifying an
+\Rcode{at.home} variable in addition to the factor identifying the players,
+which should be named according to the \Rfunarg{id} argument:
+@
+<<baseballDataUpdate>>=
+baseball$home.team <- data.frame(team = baseball$home.team, at.home = 1)
+baseball$away.team <- data.frame(team = baseball$away.team, at.home = 0)
+@ %def
+The \Rcode{at.home} variable is needed for both the home team and
 away team, so that it can be differenced as appropriate in the linear
 predictor.
 @
 <<baseballModelupdate>>=
-baseball$home.team <- data.frame(team = baseball$home.team, at.home = 1)
-baseball$away.team <- data.frame(team = baseball$away.team, at.home = 0)
 baseballModel2 <- update(baseballModel1, formula = ~ team + at.home)
 summary(baseballModel2)
 @ %def
@@ -328,7 +352,9 @@ Bradley-Terry model, where \emph{subjects} express preference for one of two
 subject attributes that is of primary interest.
 
 As an illustration of the way in which such effects are specified, consider
-the following model specification taken from the examples in \Rcode{?CEMS}:
+the following model specification taken from the examples in \Rcode{?CEMS},
+which reproduces results from Table~8 of \cite{ditt:01} apart
+from minor differences due to the different treatment of ties.
 @
 <<CEMSmodel>>=
 data(CEMS)
@@ -359,9 +385,9 @@ variables; the variable \Robject{LAT}, for example, is in the data frame \Robjec
 
 The function \Rfunction{BTabilities} extracts estimates and standard errors for
 the log-ability scores $\lambda_1, \ldots,\lambda_K$.  These will either be
-`direct' estimates, as in the standard Bradley-Terry model or for players with
-one or more missing predictor values, or `model-based' estimates of the form
-$\hat\lambda_i=\sum_{r=1}^p\hat\beta_rx_{ir}$ for players whose ability is
+`direct' estimates, in the case of the standard Bradley-Terry model or for
+players with one or more missing predictor values, or `model-based' estimates
+of the form $\hat\lambda_i=\sum_{r=1}^p\hat\beta_rx_{ir}$ for players whose ability is
 predicted by explanatory variables.
 
 As a simple illustration, team ability estimates in the
@@ -473,6 +499,14 @@ loss and all other levels denote a win, or a binary variable where 0 denotes a
 loss and 1 denotes a win. Each row represents either a single contest or a set
 of contests between the same two players.
 
+The \Rfunarg{player1} and \Rfunarg{player2} arguments are either factors
+specifying the two players in each contests, or data frames of the same along
+with any contest-level variables that are player-specific, such as the
+\Rcode{at.home} variable seen in Section \ref{sec:order}. The id factors
+should be named as specified by the \Rfunarg{id} argument if given in a data
+frame and should have identical levels, since they represent a particular
+sample of the full set of players.
+
 Any \emph{contest-specific} variables should be of the
 same length as the variables specified in the \Rfunarg{outcome},
 \Rfunarg{player1} and \Rfunarg{player2} arguments.  Sometimes this is
@@ -497,9 +531,12 @@ The safest approach is to put all potential predictor
 data frame with one row per (potential) player,
 and with row names the names of players exactly as used in variables passed to
 the \Rfunarg{player1} and \Rfunarg{player2} arguments of \Rfunction{BTm}.
-Such data frame
+Such a data frame
 should then be included in the list specified as the \Rfunarg{data} argument
 of \Rfunction{BTm} to specify where predictors (and any offset) can be found.
+
+Player-specific offsets should be included in the formula by using the
+\Rfunction{offset} function.
 
 \subsection{Converting data from the format required by the earlier \Rpackage{BradleyTerry} package}
 
