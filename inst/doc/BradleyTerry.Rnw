@@ -1,5 +1,5 @@
 % \VignetteIndexEntry{Bradley-Terry models in R}
-%\VignetteKeywords{generalized linear model, logistic regression, penalized quasi-likelihood, ranking, tournament analysis, working residuals}
+%\VignetteKeyword{generalized linear model, logistic regression, penalized quasi-likelihood, ranking, tournament analysis, working residuals}
 %\VignettePackage{BradleyTerry2}
 
 %%% For jss:
