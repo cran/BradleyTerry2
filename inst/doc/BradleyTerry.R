@@ -3,7 +3,7 @@
 ###################################################
 ### code chunk number 1: set_options
 ###################################################
-options(prompt = "R> ", continue = "+  ", width = 70, 
+options(prompt = "R> ", continue = "+  ", width = 70,
         useFancyQuotes = FALSE, digits = 7)
 
 
@@ -152,9 +152,9 @@ res <- residuals(lizModel2, type = "grouped")
 ###################################################
 ### code chunk number 21: residualWLS
 ###################################################
-lm(res ~ throat.PC1, weights = attr(res, "weights"), 
+lm(res ~ throat.PC1, weights = attr(res, "weights"),
    data = flatlizards$predictors)
-lm(res ~ head.length, weights = attr(res, "weights"), 
+lm(res ~ head.length, weights = attr(res, "weights"),
    data = flatlizards$predictors)
 
 
@@ -194,9 +194,9 @@ str(CEMS, vec.len = 2)
 ###################################################
 library("prefmod")
 student <- cemspc[c("ENG", "SEX")]
-student$ENG <- factor(student$ENG, levels = 1:2, 
+student$ENG <- factor(student$ENG, levels = 1:2,
                       labels = c("good", "poor"))
-student$SEX <- factor(student$SEX, levels = 1:2, 
+student$SEX <- factor(student$SEX, levels = 1:2,
                       labels = c("female", "male"))
 
 
@@ -221,7 +221,7 @@ contest$lose.adj <- c(lose + draw/2)
 ###################################################
 ### code chunk number 30: school_factors
 ###################################################
-lab <- c("London", "Paris", "Milano", "St. Gallen", "Barcelona", 
+lab <- c("London", "Paris", "Milano", "St. Gallen", "Barcelona",
          "Stockholm")
 contest$school1 <- factor(sequence(1:5), levels = 1:6, labels = lab)
 contest$school2 <- factor(rep(2:6, 1:5), levels = 1:6, labels = lab)

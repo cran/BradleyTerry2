@@ -34,26 +34,30 @@ BTabilities <-  function (model)
         X[Xmiss, ] <- 0
         X <- X[, -1, drop = FALSE]
         separate.ability <- unique(union(players[Xmiss],
-                                        model$separate.ability))
+                                         model$separate.ability))
         ns <- length(separate.ability)
         if (ns) {
             S <- matrix(0, nrow = nrow(X), ncol = ns)
             S[cbind(which(players %in% separate.ability), seq(ns))] <- 1
             X <- cbind(S, X)
         }
-
-        kept <- model$assign %in% c(0, which(keep))
+        ## remove inestimable coef
+        est <- !is.na(model$coef)
+        X <- X[, est, drop = FALSE]
+        ## keep coef of player covariates
+        kept <- model$assign[est] %in% c(0, which(keep))
 
         sqrt.vcov <- chol(vcov(model)[kept, kept])
         V <- crossprod(sqrt.vcov %*% t(X))
         se <- sqrt(diag(V))
-        abilities <- cbind(X %*% coef(model)[kept] + offset, se)
+        abilities <- cbind(X %*% coef(model)[est][kept] + offset, se)
         attr(abilities, "vcov") <- V
         if (length(separate.ability)) {
             attr(abilities, "separate") <- separate.ability
         }
     }
     else {
+        ## get ability coef and corresponding vcov
         asgn <- model$assign
         if (is.null(asgn))
             abilities <- TRUE
@@ -61,22 +65,28 @@ BTabilities <-  function (model)
             idterm <- attr(terms(model$formula), "term.labels") == model$id
             if (!any(idterm))
                stop("abilities not uniquely defined for this parameterization")
-            coefs.to.include <- asgn[!is.na(coef(model))] == which(attr(terms(model$formula),
-                                "term.labels") == model$id)
+            coefs.to.include <- asgn == which(idterm)
+            vcov.to.include <- asgn[!is.na(coef(model))] == which(idterm)
         }
-        summ <- coef(summary(model))[coefs.to.include, , drop = FALSE]
-        abilities <- cbind(c(0, summ[, 1]), c(0, summ[, 2]))
-        vc <- vcov(model)[coefs.to.include, coefs.to.include,
-                          drop = FALSE]
-        vc <- rbind(0, cbind(0, vc))
-        refcat <- model$refcat
-        if (!is.null(refcat)) {
-            perm <- order(match(levels(relevel(player1, refcat)),
-                                player.names))
-            abilities <- abilities[perm, ]
-            vc <- vc[perm, perm]
+        coef <- na.exclude(coef(model)[coefs.to.include])
+        vc <- vcov(model)[names(coef), names(coef), drop = FALSE]
+        ## setup factor reflecting contrasts used ..
+        fac <- factor(player.names, paste0(model$id, player.names))
+        if (!is.null(model$refcat)) {
+            fac <- C(relevel(fac, model$refcat), "contr.treatment")
+        } else fac <- C(fac, model$contrasts[[model$id]])
+        contr <- contrasts(fac)
+        ## calc abilities and s.e., fill in NA as necessary
+        if (!is.null(attr(coef, "na.action"))) {
+            contr <- contr[, -attr(coef, "na.action"), drop = FALSE]
         }
-        rownames(vc) <- colnames(vc) <- player.names
+        est <- contr %*% coef
+        se <- sqrt(diag(contr %*% vc %*% t(contr)))
+        if (!is.null(attr(coef, "na.action"))){
+            id <- match(names(attr(coef, "na.action")), rownames(contr))
+            est[id] <- se[id] <- NA
+        }
+        abilities <- cbind(est, se)
         attr(abilities, "vcov") <- vc
     }
     colnames(abilities) <- c("ability", "s.e.")
