@@ -1,5 +1,5 @@
+#' @importFrom stats model.frame
+#' @export
 model.matrix.BTm <- function(object, ...){
-    ## set contrasts to NULL as apply to player formula not dummy formula
-    object$contrasts <- NULL
-    NextMethod("model.matrix")
+    model.frame(object)$X
 }

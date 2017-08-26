@@ -1,3 +1,59 @@
+#' Compare Nested Bradley Terry Models
+#' 
+#' Compare nested models inheriting from class `"BTm"`. For models with no
+#' random effects, compute analysis of deviance table, otherwise compute Wald
+#' tests of additional terms.
+#' 
+#' For models with no random effects, an analysis of deviance table is computed
+#' using [anova.glm()]. Otherwise, Wald tests are computed as
+#' detailed here.
+#' 
+#' If a single object is specified, terms are added sequentially and a Wald
+#' statistic is computed for the extra parameters. If the full model includes
+#' player covariates and there are players with missing values over these
+#' covariates, then the `NULL` model will include a separate ability for
+#' these players. If there are missing values in any contest-level variables in
+#' the full model, the corresponding contests will be omitted throughout. The
+#' random effects structure of the full model is assumed for all sub-models.
+#' 
+#' For a list of objects, consecutive pairs of models are compared by computing
+#' a Wald statistic for the extra parameters in the larger of the two models.
+#' 
+#' The Wald statistic is always based on the variance-covariance matrix of the
+#' larger of the two models being compared.
+#' 
+#' @param object a fitted object of class inheriting from `"BTm"`.
+#' @param ... additional `"BTm"` objects. 
+#' @param dispersion a value for the dispersion. Not implemented for models
+#' with random effects.
+#' @param test optional character string (partially) matching one of
+#' `"Chisq"`, `"F"` or `"Cp"` to specify that p-values should be
+#' returned.  The Chisq test is a likelihood ratio test for models with no
+#' random effects, otherwise a Wald test. Options `"F"` and `"Cp"`
+#' are only applicable to models with no random effects, see
+#' [stat.anova()].
+#' @return An object of class `"anova"` inheriting from class
+#' `"data.frame"`.
+#' @section Warning: The comparison between two or more models will only be
+#' valid if they are fitted to the same dataset. This may be a problem if there
+#' are missing values and 's default of `na.action = na.omit` is used. An
+#' error will be returned in this case.
+#' 
+#' The same problem will occur when separate abilities have been estimated for
+#' different subsets of players in the models being compared. However no
+#' warning is given in this case.
+#' @author Heather Turner
+#' @seealso [BTm()], [add1.BTm()]
+#' @keywords models
+#' @examples
+#' 
+#' result <- rep(1, nrow(flatlizards$contests))
+#' BTmodel <- BTm(result, winner, loser, ~ throat.PC1[..] + throat.PC3[..] +
+#'                head.length[..] + (1|..), data = flatlizards,
+#'                trace = TRUE)
+#' anova(BTmodel)
+#' 
+#' @export
 anova.BTm <- function (object, ..., dispersion = NULL, test = NULL)
 {
     ## Only list models in ...
@@ -6,8 +62,9 @@ anova.BTm <- function (object, ..., dispersion = NULL, test = NULL)
         rep(FALSE, length(dotargs))
     else (names(dotargs) != "")
     if (any(named))
-        warning("the following arguments to 'anova.BTm' are invalid and dropped: ",
-            paste(deparse(dotargs[named]), collapse = ", "))
+        warning("the following arguments to 'anova.BTm' are invalid and ",
+                "dropped: ",
+                paste(deparse(dotargs[named]), collapse = ", "))
     dotargs <- dotargs[!named]
     is.BTm <- unlist(lapply(dotargs, function(x) inherits(x, "BTm")))
     dotargs <- dotargs[is.BTm]
@@ -24,10 +81,12 @@ anova.BTm <- function (object, ..., dispersion = NULL, test = NULL)
                 class(x) <- setdiff(class(x), "BTm")
                 x})
             call <- match.call()
-            anova.table <- do.call("anova", c(models, call$dispersion, call$test))
+            anova.table <- do.call("anova", 
+                                   c(models, call$dispersion, call$test))
             attr(anova.table, "heading") <-
                 c(paste("Analysis of Deviance Table\n\n",
-                        "Response: ", deparse(object$call$outcome, 500), "\n", sep = ""),
+                        "Response: ", 
+                        deparse(object$call$outcome, 500), "\n", sep = ""),
                   paste("Model ", format(seq(models)), ": ", variables,
                         sep = "", collapse = "\n"))
             return(anova.table)
@@ -84,9 +143,12 @@ anova.BTm <- function (object, ..., dispersion = NULL, test = NULL)
                           sigma.fixed = object$sigma.fixed)
             class(fit) <- oldClass(object)
             ind <- (varseq == i)[varseq <= i]
-            trystat <- try(t(coef(fit)[ind]) %*%
-                           chol2inv(chol(suppressMessages(vcov(fit, dispersion = dispersion))[ind, ind])) %*%
-                           coef(fit)[ind], silent = TRUE) #vcov should deal with dispersion != 1
+            trystat <- 
+                try(t(coef(fit)[ind]) %*%
+                        chol2inv(chol(suppressMessages(
+                            #vcov should deal with dispersion != 1
+                            vcov(fit, dispersion = dispersion))[ind, ind])) %*%
+                        coef(fit)[ind], silent = TRUE) 
             if (inherits(trystat, "try-error")) {
                 stat[i] <- df[i] <- NA
                 tryerror <- TRUE
@@ -98,8 +160,9 @@ anova.BTm <- function (object, ..., dispersion = NULL, test = NULL)
         }
     }
     ind <- varseq == nvars
-    trystat <- try(t(coef(object)[ind]) %*% chol2inv(chol(object$varFix[ind, ind])) %*%
-                   coef(object)[ind], silent = TRUE)
+    trystat <- try(t(coef(object)[ind]) %*% 
+                       chol2inv(chol(object$varFix[ind, ind])) %*%
+                       coef(object)[ind], silent = TRUE)
     if (inherits(trystat, "try-error")) {
         stat[nvars] <- df[nvars] <- NA
         tryerror <- TRUE
@@ -126,9 +189,11 @@ anova.BTm <- function (object, ..., dispersion = NULL, test = NULL)
         if (test == "F" && df.dispersion == Inf) {
             fam <- object$family$family
             if (fam == "binomial" || fam == "poisson")
-                warning(gettextf("using F test with a %s family is inappropriate",
-                  fam), domain = NA)
-            else warning("using F test with a fixed dispersion is inappropriate")
+                warning(gettextf("using F test with a %s family is ", 
+                                 "inappropriate", fam), domain = NA)
+            else {
+                warning("using F test with a fixed dispersion is inappropriate")
+            }
         }
         table <- switch(test, Chisq = {
             dfs <- table[, "Df"]

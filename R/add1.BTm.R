@@ -1,3 +1,66 @@
+#' Add or Drop Single Terms to/from a Bradley Terry Model
+#' 
+#' Add or drop single terms within the limit specified by the `scope`
+#' argument. For models with no random effects, compute an analysis of deviance
+#' table, otherwise compute the Wald statistic of the parameters that have been
+#' added to or dropped from the model.
+#' 
+#' The hierarchy is respected when considering terms to be added or dropped:
+#' all main effects contained in a second-order interaction must remain, and so
+#' on.
+#' 
+#' In a scope formula \samp{.} means \sQuote{what is already there}.
+#' 
+#' For `drop1`, a missing `scope` is taken to mean that all terms in
+#' the model may be considered for dropping.
+#' 
+#' If `scope` includes player covariates and there are players with
+#' missing values over these covariates, then a separate ability will be
+#' estimated for these players in *all* fitted models. Similarly if there
+#' are missing values in any contest-level variables in `scope`, the
+#' corresponding contests will be omitted from all models.
+#' 
+#' If `formula` includes random effects, the same random effects structure
+#' will apply to all models.
+#' 
+#' @aliases add1.BTm drop1.BTm
+#' @param object a fitted object of class inheriting from `"BTm"`.
+#' @param scope a formula specifying the model including all terms to be
+#' considered for adding or dropping.
+#' @param scale an estimate of the dispersion. Not implemented for models with
+#' random effects.
+#' @param test should a p-value be returned? The F test is only appropriate for
+#' models with no random effects for which the dispersion has been estimated.
+#' The Chisq test is a likelihood ratio test for models with no random effects,
+#' otherwise a Wald test.
+#' @param x a model matrix containing columns for all terms in the scope.
+#' Useful if `add1` is to be called repeatedly.  **Warning:** no checks
+#' are done on its validity.
+#' @param \dots further arguments passed to [add1.glm()].
+#' @return An object of class `"anova"` summarizing the differences in fit
+#' between the models.
+#' @author Heather Turner
+#' @seealso [BTm()], [anova.BTm()]
+#' @keywords models
+#' @examples
+#' 
+#' result <- rep(1, nrow(flatlizards$contests))
+#' BTmodel1 <- BTm(result, winner, loser,
+#'                 ~ throat.PC1[..] + throat.PC3[..] + (1|..),
+#'                 data = flatlizards,
+#'                 tol = 1e-4, sigma = 2, trace = TRUE)
+#' 
+#' drop1(BTmodel1)
+#' 
+#' add1(BTmodel1, ~ . + head.length[..] + SVL[..], test = "Chisq")
+#' 
+#' BTmodel2 <- update(BTmodel1, formula = ~ . + head.length[..])
+#' 
+#' drop1(BTmodel2, test = "Chisq")
+#' 
+#' @importFrom stats add.scope coef model.frame model.offset model.response model.weights formula pchisq pf reformulate terms update update.formula vcov
+#' @importFrom lme4 findbars nobars
+#' @export
 add1.BTm <- function(object, scope, scale = 0, test = c("none", "Chisq", "F"),
                       x = NULL, ...) {
     old.form <- formula(object)
@@ -7,7 +70,8 @@ add1.BTm <- function(object, scope, scale = 0, test = c("none", "Chisq", "F"),
         orandom <- findbars(old.form[[2]])
         srandom <- findbars(new.form[[2]])
         if (length(srandom) && !identical(orandom, srandom))
-            stop("Random effects structure of object and scope must be identical.")
+            stop("Random effects structure of object and scope must be ",
+                 "identical.")
         scope <- add.scope(old.form, new.form)
     }
     if (!length(scope))
@@ -73,8 +137,9 @@ add1.BTm <- function(object, scope, scale = 0, test = c("none", "Chisq", "F"),
     Terms <- attr(terms(nobars(new.form)), "term.labels")
     ousex <- asgn %in% c(0, which(Terms %in% oTerms))
 
-    sTerms <- sapply(strsplit(Terms, ":", fixed = TRUE),
-                     function(x) paste(sort(x), collapse = ":"))
+    sTerms <- vapply(strsplit(Terms, ":", fixed = TRUE), 
+                     function(x) paste(sort(x), collapse = ":"),
+                     character(1))
 
     method <- switch(object$method,
                      glmmPQL.fit)
@@ -100,7 +165,7 @@ add1.BTm <- function(object, scope, scale = 0, test = c("none", "Chisq", "F"),
         ind <- (usex & !ousex)[usex]
         trystat <- try(t(coef(fit)[ind]) %*%
             chol2inv(chol(vcov(fit, dispersion = dispersion)[ind, ind])) %*%
-                coef(fit)[ind], silent = TRUE) #vcov should deal with dispersion != 1
+                coef(fit)[ind], silent = TRUE) #vcov should handle disp != 1
         if (inherits(trystat, "try-error")) {
             stat[i] <- df[i] <- NA
             tryerror <- TRUE
@@ -132,9 +197,12 @@ add1.BTm <- function(object, scope, scale = 0, test = c("none", "Chisq", "F"),
         if (df.dispersion == Inf) {
             fam <- object[[1]]$family$family
             if (fam == "binomial" || fam == "poisson")
-                warning(gettextf("using F test with a '%s' family is inappropriate",
-                                 fam), domain = NA, call. = FALSE)
-            else warning("using F test with a fixed dispersion is inappropriate")
+                warning(gettextf(
+                    "using F test with a '%s' family is inappropriate",
+                    fam), domain = NA, call. = FALSE)
+            else {
+                warning("using F test with a fixed dispersion is inappropriate")
+            }
         }
         dfs <- table[, "Df"]
         Fvalue <- table[, "Statistic"]/abs(dfs)

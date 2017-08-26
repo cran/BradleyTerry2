@@ -1,3 +1,5 @@
+#' @importFrom stats coef pnorm
+#' @export
 summary.BTglmmPQL <- function(object, dispersion = NULL, correlation = FALSE,
                             symbolic.cor = FALSE, ...) {
     if (identical(object$sigma, 0)){
