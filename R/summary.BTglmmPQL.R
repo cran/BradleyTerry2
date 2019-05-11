@@ -3,8 +3,10 @@
 summary.BTglmmPQL <- function(object, dispersion = NULL, correlation = FALSE,
                             symbolic.cor = FALSE, ...) {
     if (identical(object$sigma, 0)){
-        cat("PQL algorithm converged to fixed effects model\n")
-        return(NextMethod("summary"))
+        ans <- NextMethod("summary")
+        ans$sigma <- 0
+        class(ans) <- c("summary.BTglmmPQL", class(ans))
+        return(ans)
     }
     aliased <- is.na(coef(object))
     coefs <- coef(object)[!aliased]
