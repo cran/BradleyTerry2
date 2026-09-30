@@ -1,5 +1,6 @@
 ## ----include=FALSE------------------------------------------------------------
 library <- function(...) suppressPackageStartupMessages(base::library(...))
+prefmod <- requireNamespace("prefmod", quietly = TRUE)
 library(knitr)
 opts_chunk$set(
 tidy=FALSE
@@ -122,34 +123,34 @@ baseball$away.team[1,]
 ## ----str_CEMS-------------------------------------------------------
 str(CEMS, vec.len = 2)
 
-## ----student-specific_data------------------------------------------
-library("prefmod")
-student <- cemspc[c("ENG", "SEX")]
-student$ENG <- factor(student$ENG, levels = 1:2,
-                      labels = c("good", "poor"))
-student$SEX <- factor(student$SEX, levels = 1:2,
-                      labels = c("female", "male"))
+## ----student-specific_data, eval = prefmod--------------------------
+# library("prefmod")
+# student <- cemspc[c("ENG", "SEX")]
+# student$ENG <- factor(student$ENG, levels = 1:2,
+#                       labels = c("good", "poor"))
+# student$SEX <- factor(student$SEX, levels = 1:2,
+#                       labels = c("female", "male"))
 
-## ----student_factor-------------------------------------------------
-cems <- list(student = student)
-student <- gl(303, 1, 303 * 15) #303 students, 15 comparisons
-contest <- data.frame(student = student)
+## ----student_factor, eval = prefmod---------------------------------
+# cems <- list(student = student)
+# student <- gl(303, 1, 303 * 15) #303 students, 15 comparisons
+# contest <- data.frame(student = student)
 
-## ----binomial_response----------------------------------------------
-win <- cemspc[, 1:15] == 0
-lose <- cemspc[, 1:15] == 2
-draw <- cemspc[, 1:15] == 1
-contest$win.adj <- c(win + draw/2)
-contest$lose.adj <- c(lose + draw/2)
+## ----binomial_response, eval = prefmod------------------------------
+# win <- cemspc[, 1:15] == 0
+# lose <- cemspc[, 1:15] == 2
+# draw <- cemspc[, 1:15] == 1
+# contest$win.adj <- c(win + draw/2)
+# contest$lose.adj <- c(lose + draw/2)
 
-## ----school_factors-------------------------------------------------
-lab <- c("London", "Paris", "Milano", "St. Gallen", "Barcelona",
-         "Stockholm")
-contest$school1 <- factor(sequence(1:5), levels = 1:6, labels = lab)
-contest$school2 <- factor(rep(2:6, 1:5), levels = 1:6, labels = lab)
+## ----school_factors, eval = prefmod---------------------------------
+# lab <- c("London", "Paris", "Milano", "St. Gallen", "Barcelona",
+#          "Stockholm")
+# contest$school1 <- factor(sequence(1:5), levels = 1:6, labels = lab)
+# contest$school2 <- factor(rep(2:6, 1:5), levels = 1:6, labels = lab)
 
-## ----cems_data------------------------------------------------------
-cems$contest <- contest
+## ----cems_data, eval = prefmod--------------------------------------
+# cems$contest <- contest
 
 ## ----functions, echo = FALSE------------------------------
 ## cf. prompt
